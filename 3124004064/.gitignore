@@ -1,2 +1,6 @@
 /.venv
 /.idea
+.coverage
+result.prof
+__pycache__/
+tests/ans*
