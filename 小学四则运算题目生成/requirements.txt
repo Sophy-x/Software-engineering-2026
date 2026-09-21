@@ -1,0 +1,6 @@
+# 单元测试与代码覆盖率
+pytest==7.4.4
+pytest-cov==4.1.0
+
+# 打包为 Windows 可执行程序 Myapp.exe
+pyinstaller==6.3.0
