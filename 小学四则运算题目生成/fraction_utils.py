@@ -18,10 +18,10 @@ def format_fraction(f: Fraction) -> str:
       连接符采用需求指定的 Unicode 右单引号 ’ (\\u2019)（如 '2’3/8'）。
 
     Args:
-        f: Fraction 对象
+        f: Fraction 有理数对象
 
     Returns:
-        格式化后的字符串表示
+        格式化后的字符串
     """
     if f.denominator == 1:
         return str(f.numerator)
@@ -56,7 +56,8 @@ def parse_fraction(s: str) -> Fraction:
         解析出的标准 Fraction 对象
 
     Raises:
-        ValueError: 文本格式不合法或分母为 0
+        ValueError: 文本格式不合法
+        ZeroDivisionError: 分母为 0
     """
     s = s.strip()
     if not s:
@@ -112,14 +113,17 @@ def parse_fraction(s: str) -> Fraction:
 
 
 def is_true_fraction(f: Fraction) -> bool:
-    """判断是否为需求文档定义的真分数。
+    """判断是否为需求文档定义的“真分数”。
 
-    定义：化简后分母严格大于 1 的正有理数 (d >= 2 且数值 > 0)。
-    包含纯真分数（如 1/2）与带分数（如 1’1/2）。
+    真分数定义为：化简后分母严格大于 1 的正有理数 (denominator >= 2 且数值 > 0)。
+    - 纯真分数（如 1/2, 3/5）判定为 True。
+    - 带分数（如 1’1/2 = 3/2, 2’3/8 = 19/8）判定为 True。
+    - 自然数/整数（分母为 1，如 0, 1, 2）判定为 False。
+    - 负数或 0 判定为 False。
     """
     return f > 0 and f.denominator > 1
 
 
-# 别名以提高兼容性
+# 兼容性别名
 fraction_to_str = format_fraction
 str_to_fraction = parse_fraction
