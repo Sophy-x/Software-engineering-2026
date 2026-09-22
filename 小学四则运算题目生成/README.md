@@ -9,27 +9,29 @@
 
 ```text
 Myapp/
-├── main.py               # 命令行参数解析、文件 I/O、全局调度
-├── fraction_utils.py     # 分数与带分数的格式化输出与解析
-├── tree.py               # 表达式树结构、加括号规则、同构去重签名
-├── generator.py          # 随机题目生成、无负数/除法真分数剪枝
-├── evaluator.py          # 算式分词、调度场逆波兰求值、文件判分
-├── requirements.txt      # 依赖文件
-├── README.md             # 项目文档
+├── main.py                   # 命令行参数解析、文件 I/O、全局调度
+├── exercises/                # 核心业务包
+│   ├── __init__.py           # 包导出定义
+│   ├── fraction_utils.py     # 分数与带分数的格式化输出与解析
+│   ├── tree.py               # 表达式树结构、加括号规则、同构去重签名
+│   ├── generator.py          # 随机题目生成、无负数/除法真分数剪枝
+│   └── evaluator.py          # 算式分词、调度场逆波兰求值、文件判分
+├── requirements.txt          # 依赖文件
+├── README.md                 # 项目文档
+├── spec.md                   # 需求规格说明文档
 ├── tests/
-│   ├── test_fraction.py  # 带分数转换与异常用例单测
-│   ├── test_generator.py # 题目生成与同构去重单测
-│   └── test_evaluator.py # 解析与批改算式单测
-├── Exercises.txt         # 运行时生成：题目文件
-├── Answers.txt           # 运行时生成：答案文件
-└── Grade.txt             # 运行时生成：批改统计文件
+│   ├── test_generator.py     # 题目生成与同构去重单测
+│   └── test_evaluator.py     # 解析与批改算式单测
+├── Exercises.txt             # 运行时生成：题目文件
+├── Answers.txt               # 运行时生成：答案文件
+└── Grade.txt                 # 运行时生成：批改统计文件
 ```
 
 ---
 
 ## 2. 核心模块实现
 
-### 2.1 分数工具模块 (`fraction_utils.py`)
+### 2.1 分数工具模块 (`exercises/fraction_utils.py`)
 *负责处理自然数、真分数和带分数的精准数值计算与文本双向转换。*
 
 1. **数值范畴定义**：
@@ -49,7 +51,7 @@ Myapp/
    - **自然数解析**：纯数字文本直接转换为 $\frac{s}{1}$。
 ---
 
-### 2.2 表达式树与括号规则 (`tree.py`)
+### 2.2 表达式树与括号规则 (`exercises/tree.py`)
 *使用二叉表达式树表示算式，叶子节点为数值，内部节点为运算符（`+`, `−`, `×`, `÷`）。*
 
 1. **节点定义 (`TreeNode`)**：
@@ -59,11 +61,11 @@ Myapp/
    - **左子树加括号规则**：当 `left.op` 的优先级严格低于当前节点时加括号（如父节点为 `×`，左节点为 `+`，得到 `(a + b) × c`）。
    - **右子树加括号规则**：
      - 若 `right.op` 的优先级严格低于当前节点，必须加括号。
-     - 若 `right.op` 的优先级等于当前节点，且当前节点为减法 `−` 或除法 `÷` 时，因左结合律特性，右子树必须加括号（如 $a - (b - c)$、$a \div (b \div c)$）。
+     - 若 `right.op` 的优先级等于当前节点，因数学文本遵循左结合律，右子树同级运算必须加括号以区分运算次序（如 $3 + (2 + 1)$ 与 $1 + 2 + 3$ 是同构题，而 $3 + 2 + 1$ 实际等价于 $(3 + 2) + 1$；右侧减法/除法同级运算 $a - (b - c)$、$a \div (b \div c)$ 亦必须加括号）。
    - 输出格式严格保证运算符及等号两边有空格。
 3. **连续运算的左结合原则**：对未显式加括号的连续加减或乘除算式，严格遵循左结合律。
 
-### 2.3 语法树交换律去重算法 (`tree.py`)
+### 2.3 语法树交换律去重算法 (`exercises/tree.py`)
 *题目要求：不能通过有限次交换 $+$ 和 $\times$ 左右算术表达式变换为同一道题。*
 
 1. **规范化序列化 (`canonical_repr(node) -> str`)**：
@@ -81,7 +83,7 @@ Myapp/
 
 ---
 
-### 2.4 题目生成与剪枝策略 (`generator.py`)
+### 2.4 题目生成与剪枝策略 (`exercises/generator.py`)
 
 1. **算符与树结构采样**：
    - 运算符数量 $k \in \{1, 2, 3\}$（不超过 3 个），对应叶子操作数数量为 $k + 1 \in \{2, 3, 4\}$。
@@ -100,7 +102,7 @@ Myapp/
    - **防死循环**：当 `-r` 极小（如 $r \le 2$）导致合法算式组合小于要求的`-n`时，设置单题尝试上限次数（Max Retry），防止生成器假死。当连续数千次尝试均无法产出新题目时，程序会主动捕获并退出。
 ---
 
-### 2.5 批改求值模块 (`evaluator.py`)
+### 2.5 批改求值模块 (`exercises/evaluator.py`)
 *用于独立解析给定的题目文件与答案文件，计算并对比统计。*
 
 1. **分词解析（Tokenizer）**：
@@ -122,16 +124,24 @@ Myapp/
 
 ### 2.6 命令行调度 (`main.py`)
 使用 `argparse` 处理命令行输入，实现两种互斥模式：
-1. **生成模式**：检查到 `-r` 参数（必需）与可选的 `-n` 参数（n默认为10），调用 `generator` 输出 `Exercises.txt` 和 `Answers.txt`。若缺少 `-r` 则终止并打印使用说明。
-2. **批改模式**：检查到 `-e` 与 `-a` 参数，调用 `evaluator` 输出 `Grade.txt`。
+1. **生成模式**：检查到 `-r` 参数（必需）与可选的 `-n` 参数（n默认为10），调用 `exercises.generator` 输出 `Exercises.txt` 和 `Answers.txt`。若缺少 `-r` 则终止并打印使用说明。
+2. **批改模式**：检查到 `-e` 与 `-a` 参数，调用 `exercises.evaluator` 输出 `Grade.txt`。
 
 ---
 
 ## 3. 安装与使用说明
 
 ### 环境准备
-* 运行环境：Python 3.10
-* 安装相关依赖：
+* 运行环境：Python 3.10+
+* 激活虚拟环境（Windows PowerShell）：
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  ```
+  或者在未激活虚拟环境时直接调用虚拟环境中的 Python：
+  ```powershell
+  .\.venv\Scripts\python.exe main.py -n 10 -r 10
+  ```
+* 安装相关依赖（如果使用新环境）：
   ```bash
   pip install -r requirements.txt
   ```
@@ -139,7 +149,7 @@ Myapp/
 ### 命令行使用
 
 #### 1. 题目生成模式
-使用 `-n` 指定题目数量，`-r` 指定数值上限（不包含该值）：
+使用 `-r` 指定数值上限（必需，不包含该值），`-n` 指定题目数量（可选，默认 10）：
 ```bash
 python main.py -n 10 -r 10
 ```
@@ -177,9 +187,12 @@ Myapp.exe -n 10000 -r 10
 运行项目完整测试套件与代码覆盖率检查：
 
 ```bash
-# 运行单元测试
+# 激活环境后运行
 pytest -v
 
+# 或通过 python -m 运行
+python -m pytest -v
+
 # 生成测试覆盖率报告
-pytest --cov=. --cov-report=term-missing
+pytest --cov=exercises --cov-report=term-missing
 ```
