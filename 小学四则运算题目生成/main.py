@@ -14,6 +14,7 @@ import sys
 from typing import List
 from exercises.generator import generate_exercises
 from exercises.evaluator import grade_exercises
+from exercises.validator import validate_exercises, describe_violations
 
 
 def save_lines(file_path: str, lines: List[str]) -> None:
@@ -35,6 +36,15 @@ def run_generate_mode(n: int, r: int) -> None:
     print(f"正在生成 {n} 道四则运算题目 (数值范围: [0, {r}))...")
     try:
         exercises, answers = generate_exercises(n, r)
+
+        # 写出前的独立复核：逐题按文本统计四则运算符个数（分数中的 '/' 不计入），
+        # 一旦发现不合格题目立即报告具体题号与原因，并终止写入，绝不静默落盘。
+        violations = validate_exercises(exercises, answers)
+        if violations:
+            print("生成结果校验未通过，已中止写入文件：", file=sys.stderr)
+            print(describe_violations(violations), file=sys.stderr)
+            sys.exit(1)
+
         save_lines("Exercises.txt", exercises)
         save_lines("Answers.txt", answers)
         print("生成完毕！")

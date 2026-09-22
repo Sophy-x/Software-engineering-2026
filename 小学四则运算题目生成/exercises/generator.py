@@ -16,6 +16,10 @@
      a. 若计算结果为整数（如 4 ÷ 2 = 2，分母为 1）：
         若 right.val / left.val 为真分数（如 2 ÷ 4 = 1/2），优先交换左右子树指针。
      b. 若交换仍不满足（如 3 ÷ 3 = 1），则重新采样右子树（多次重试），避免直接跳过。
+   - **运算符数量不变量**：交换左右子树时必须同步交换各自的运算符预算
+     (left_ops/right_ops)；重新采样某槽位时，只能使用该槽位当前的预算并只保留
+     新生成的子树。否则被移动的子树会与重新采样的子树重复计数，使运算符个数
+     偏离 num_ops（历史上偶发的 4~5 运算符题目即由此产生）。
 5. 题目去重：
    - 基于 canonical_repr 判重，消除有限次交换 + 和 × 导致的同构题目。
 """
@@ -85,6 +89,9 @@ def evaluate_binary(op: str, left_val: Fraction, right_val: Fraction) -> Optiona
 def generate_tree(num_ops: int, max_r: int, max_attempts: int = 50) -> Optional[TreeNode]:
     """递归构建包含 num_ops 个运算符的表达式二叉树，并执行即时合规剪枝与子树调整。
 
+    不变量：返回值非 None 时，result.count_operators() == num_ops 恒成立；
+    树中的每棵子树也满足同样性质。减法保证非负，除法保证结果符合真分数约定。
+
     Args:
         num_ops: 当前子树中的运算符总个数 (0 <= num_ops <= 3)
         max_r: 数值上限
@@ -122,9 +129,13 @@ def generate_tree(num_ops: int, max_r: int, max_attempts: int = 50) -> Optional[
         elif op == "÷":
             # 被除数必须 > 0 才能商为正真分数
             if left_node.val <= 0:
-                # 若右子树值 > 0，尝试交换
+                # 若右子树值 > 0，尝试交换。
+                # 注意：交换左右子树时必须同步交换各自的运算符预算 (left_ops/right_ops)，
+                # 否则下面按 right_ops 重新采样右子树时会与已挪到左侧的子树重复计数，
+                # 使最终运算符个数偏离 num_ops（这正是历史上 5 个运算符题目的成因）。
                 if right_node.val > 0:
                     left_node, right_node = right_node, left_node
+                    left_ops, right_ops = right_ops, left_ops
                 else:
                     continue
 
@@ -140,24 +151,20 @@ def generate_tree(num_ops: int, max_r: int, max_attempts: int = 50) -> Optional[
                 if is_true_fraction(swapped_res):
                     return TreeNode(op="÷", val=swapped_res, left=right_node, right=left_node)
 
-            # 处理 B：交换仍不满足时（如 3 ÷ 3 = 1），针对右子树重新采样多次
-            found_valid_right = False
+            # 处理 B：交换仍不满足时（如 3 ÷ 3 = 1），针对右槽位重新采样多次。
+            # 每次重新采样都必须沿用该槽位当前的预算 right_ops，并且只使用本次新生成的子树
+            # （不再沿用旧子树），这样返回的树恒由"预算合计为 num_ops - 1 的两棵子树 + 1 个根节点"构成。
             for _ in range(15):
                 new_right = generate_tree(right_ops, max_r, max_attempts=5)
-                if new_right is not None and new_right.val != 0:
-                    candidate_res = left_node.val / new_right.val
-                    if is_true_fraction(candidate_res):
-                        right_node = new_right
-                        found_valid_right = True
-                        break
-                    # 也检查反向是否构成真分数，如构成，直接返回
-                    swapped_cand = new_right.val / left_node.val
-                    if is_true_fraction(swapped_cand):
-                        return TreeNode(op="÷", val=swapped_cand, left=new_right, right=left_node)
-
-            if found_valid_right:
-                val = left_node.val / right_node.val
-                return TreeNode(op="÷", val=val, left=left_node, right=right_node)
+                if new_right is None or new_right.val == 0:
+                    continue
+                candidate_res = left_node.val / new_right.val
+                if is_true_fraction(candidate_res):
+                    return TreeNode(op="÷", val=candidate_res, left=left_node, right=new_right)
+                # 也检查反向是否构成真分数，如构成，直接返回
+                swapped_cand = new_right.val / left_node.val
+                if is_true_fraction(swapped_cand):
+                    return TreeNode(op="÷", val=swapped_cand, left=new_right, right=left_node)
 
             # 若多次尝试后仍无法构造合法除法，放弃本轮 op 采样
             continue
@@ -206,6 +213,14 @@ def generate_exercises(n: int, max_r: int, max_retries: int = 2000) -> Tuple[Lis
                     f"已成功生成 {len(exercises)} / {n} 道题。"
                 )
             continue
+
+        # 结构不变量保护：表达式树构建完成后，递归统计运算节点个数，
+        # 必须与本次请求的 num_ops 严格一致，避免出现超过 3 个运算符的题目。
+        actual_ops = tree.count_operators()
+        assert actual_ops == num_ops, (
+            f"生成器内部错误：表达式树的运算符个数为 {actual_ops}，"
+            f"与请求的 num_ops={num_ops} 不一致（表达式：{tree.to_infix()}）"
+        )
 
         c_repr = tree.canonical_repr()
         if c_repr in seen_canonical:

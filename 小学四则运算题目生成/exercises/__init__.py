@@ -5,6 +5,7 @@
 - 表达式语法树 (tree): TreeNode, OPERATOR_PRECEDENCE
 - 题目生成器 (generator): generate_exercises, generate_tree, random_leaf
 - 评测与批改 (evaluator): evaluate_expression, grade_exercises, tokenize
+- 输出校验 (validator): count_operators, validate_exercises, describe_violations
 """
 
 from .fraction_utils import (
@@ -28,6 +29,11 @@ from .evaluator import (
     evaluate_expression,
     grade_exercises,
 )
+from .validator import (
+    count_operators,
+    validate_exercises,
+    describe_violations,
+)
 
 __all__ = [
     "format_fraction",
@@ -43,4 +49,7 @@ __all__ = [
     "tokenize",
     "evaluate_expression",
     "grade_exercises",
+    "count_operators",
+    "validate_exercises",
+    "describe_violations",
 ]

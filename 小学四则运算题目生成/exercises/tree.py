@@ -52,6 +52,17 @@ class TreeNode:
         """是否为叶子节点。"""
         return self.op is None
 
+    def count_operators(self) -> int:
+        """递归统计以当前节点为根的子树中运算符节点的个数（叶子节点计 0）。
+
+        用于校验生成器的结构不变量：generate_tree(num_ops) 返回的表达式树，
+        其 count_operators() 必须恰等于 num_ops。分数中的 '/' 是操作数的一部分，
+        不占用运算符节点，因此不计入。
+        """
+        if self.is_leaf():
+            return 0
+        return 1 + self.left.count_operators() + self.right.count_operators()
+
     def to_infix(self, parent_op: Optional[str] = None, is_right: bool = False) -> str:
         """递归生成中缀表达式字符串。
 
