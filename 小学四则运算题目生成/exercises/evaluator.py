@@ -11,7 +11,7 @@
 import re
 from fractions import Fraction
 from typing import List, Tuple
-from fraction_utils import parse_fraction
+from .fraction_utils import parse_fraction
 
 # 运算符优先级字典
 PRECEDENCE = {

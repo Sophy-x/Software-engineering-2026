@@ -12,8 +12,8 @@
 import argparse
 import sys
 from typing import List
-from generator import generate_exercises
-from evaluator import grade_exercises
+from exercises.generator import generate_exercises
+from exercises.evaluator import grade_exercises
 
 
 def save_lines(file_path: str, lines: List[str]) -> None:

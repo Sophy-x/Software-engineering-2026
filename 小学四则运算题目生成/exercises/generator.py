@@ -23,8 +23,8 @@
 import random
 from fractions import Fraction
 from typing import List, Optional, Set, Tuple
-from fraction_utils import format_fraction, is_true_fraction
-from tree import TreeNode
+from .fraction_utils import format_fraction, is_true_fraction
+from .tree import TreeNode
 
 OPERATORS = ["+", "−", "×", "÷"]
 

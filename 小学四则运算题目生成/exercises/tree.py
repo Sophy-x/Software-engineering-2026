@@ -7,7 +7,7 @@
 
 from fractions import Fraction
 from typing import Optional
-from fraction_utils import format_fraction
+from .fraction_utils import format_fraction
 
 # 运算符优先级字典
 OPERATOR_PRECEDENCE = {
