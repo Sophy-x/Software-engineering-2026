@@ -177,7 +177,7 @@ pyinstaller -F main.py -n Myapp
 
 # 打包完成后，进入 dist 目录即可使用 Myapp.exe
 cd dist
-Myapp.exe -n 10000 -r 10
+.\Myapp.exe -n 10000 -r 10
 ```
 
 ---

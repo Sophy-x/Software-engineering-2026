@@ -1,6 +1,9 @@
 .idea/
 __pycache__/
 .venv/
+dist/
+build/
+Myapp.spec
 Answers.txt
 Exercises.txt
 Grade.txt
